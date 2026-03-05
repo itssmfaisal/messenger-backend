@@ -80,7 +80,51 @@ Token expires after **24 hours** (86400000 ms).
 
 ---
 
-### 3. Get Conversation History
+### 3. List Conversations (Paginated)
+
+| | |
+|---|---|
+| **URL** | `GET /messages/conversations?page=0&size=20` |
+| **Auth** | Bearer token required |
+
+**Query Params:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `page` | int | `0` | Zero-based page index |
+| `size` | int | `20` | Number of conversations per page |
+
+**Response `200 OK`:**
+
+```json
+{
+  "content": [
+    {
+      "partner": "jane",
+      "lastMessageAt": "2026-03-05T14:30:00.000000Z"
+    },
+    {
+      "partner": "bob",
+      "lastMessageAt": "2026-03-04T09:15:00.000000Z"
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 20
+  },
+  "totalElements": 2,
+  "totalPages": 1,
+  "last": true,
+  "first": true,
+  "numberOfElements": 2
+}
+```
+
+> Results are sorted by the most recent message (newest conversation first).
+
+---
+
+### 4. Get Conversation History
 
 | | |
 |---|---|
@@ -200,6 +244,15 @@ interface Message {
   recipient: string;
   content: string;
   sentAt: string; // ISO 8601 Instant, e.g. "2026-03-05T10:10:26.166182Z"
+}
+```
+
+### ConversationDTO
+
+```typescript
+interface ConversationDTO {
+  partner: string;       // username of the other participant
+  lastMessageAt: string; // ISO 8601 Instant of the latest message in the conversation
 }
 ```
 
