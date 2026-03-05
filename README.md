@@ -126,6 +126,26 @@ ws://localhost:8080/ws
 | `/topic/messages`                  | All messages (broadcast)       |
 | `/topic/status`                    | User join notifications        |
 
+### Testing WebSocket APIs
+
+A test page is included at [ws-test.html](ws-test.html). Open it in a browser while the server is running:
+
+```bash
+open ws-test.html        # macOS
+xdg-open ws-test.html    # Linux
+```
+
+**Steps to test:**
+
+1. Click **Connect** — status should show "Connected ✅"
+2. Enter your username (e.g., `admin`) and click **Subscribe to All** — this subscribes to private messages, broadcast, and status channels
+3. Click **Send Join** — you should see a `🟢 Status` notification in the log
+4. Enter a recipient username, type a message, and click **Send** — you should see:
+   - `📩 Private` message (if subscribed as the sender or recipient)
+   - `📢 Broadcast` message on `/topic/messages`
+
+> **Tip:** Open the page in two browser tabs with different usernames to simulate a conversation between two users.
+
 ## Project Structure
 
 ```
