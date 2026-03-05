@@ -26,15 +26,10 @@
     <div class="section">
         <strong>Connection:</strong><br>
         <input id="url" value="http://localhost:8080/ws" size="40">
+        <input id="username" placeholder="Your username (e.g. admin)" size="25">
         <button onclick="connectStomp()">Connect</button>
         <button onclick="disconnectStomp()">Disconnect</button>
         <span id="status" style="margin-left:10px;">Disconnected</span>
-    </div>
-
-    <div class="section">
-        <strong>Subscribe:</strong><br>
-        <input id="username" placeholder="Your username (e.g. admin)" size="30">
-        <button onclick="subscribeAll()">Subscribe to All</button>
     </div>
 
     <div class="section">
@@ -65,13 +60,32 @@
 
         function connectStomp() {
             const url = document.getElementById('url').value;
+            const user = document.getElementById('username').value;
+            if (!user) { log('Enter a username before connecting!', 'error'); return; }
+
             const sock = new SockJS(url);
             stompClient = Stomp.over(sock);
 
-            stompClient.connect({}, function (frame) {
-                document.getElementById('status').textContent = 'Connected ✅';
+            stompClient.connect({ username: user }, function (frame) {
+                document.getElementById('status').textContent = 'Connected as ' + user + ' ✅';
                 document.getElementById('status').style.color = '#4ec9b0';
                 log('CONNECTED: ' + frame, 'system');
+
+                // Auto-subscribe after connecting
+                stompClient.subscribe('/user/queue/messages', function (msg) {
+                    log('📩 Private: ' + msg.body, 'received');
+                });
+                log('Subscribed to /user/queue/messages', 'system');
+
+                stompClient.subscribe('/topic/status', function (msg) {
+                    log('🟢 Status: ' + msg.body, 'received');
+                });
+                log('Subscribed to /topic/status', 'system');
+
+                stompClient.subscribe('/user/queue/errors', function (msg) {
+                    log('❌ Error: ' + msg.body, 'error');
+                });
+                log('Subscribed to /user/queue/errors', 'system');
             }, function (error) {
                 document.getElementById('status').textContent = 'Disconnected ❌';
                 document.getElementById('status').style.color = '#f44747';
@@ -87,27 +101,6 @@
                     log('Disconnected', 'system');
                 });
             }
-        }
-
-        function subscribeAll() {
-            const user = document.getElementById('username').value;
-            if (!user) { log('Enter a username first!', 'error'); return; }
-            if (!stompClient) { log('Connect first!', 'error'); return; }
-
-            stompClient.subscribe('/user/' + user + '/queue/messages', function (msg) {
-                log('📩 Private: ' + msg.body, 'received');
-            });
-            log('Subscribed to /user/' + user + '/queue/messages', 'system');
-
-            stompClient.subscribe('/topic/messages', function (msg) {
-                log('📢 Broadcast: ' + msg.body, 'received');
-            });
-            log('Subscribed to /topic/messages', 'system');
-
-            stompClient.subscribe('/topic/status', function (msg) {
-                log('🟢 Status: ' + msg.body, 'received');
-            });
-            log('Subscribed to /topic/status', 'system');
         }
 
         function sendJoin() {
