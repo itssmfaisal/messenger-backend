@@ -144,16 +144,61 @@ Token expires after **24 hours** (86400000 ms).
     "sender": "john",
     "recipient": "jane",
     "content": "Hey!",
-    "sentAt": "2026-03-05T10:00:00.000000Z"
+    "status": "SEEN",
+    "sentAt": "2026-03-05T10:00:00.000000Z",
+    "deliveredAt": "2026-03-05T10:00:01.000000Z",
+    "seenAt": "2026-03-05T10:00:03.000000Z"
   },
   {
     "id": 2,
     "sender": "jane",
     "recipient": "john",
     "content": "Hi there!",
-    "sentAt": "2026-03-05T10:00:05.000000Z"
+    "status": "DELIVERED",
+    "sentAt": "2026-03-05T10:00:05.000000Z",
+    "deliveredAt": "2026-03-05T10:00:06.000000Z",
+    "seenAt": null
   }
 ]
+```
+
+---
+
+### 5. Check User Online Status
+
+| | |
+|---|---|
+| **URL** | `GET /presence/{username}` |
+| **Auth** | Bearer token required |
+
+**Path Params:**
+
+- `username` — the user to check
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "jane",
+  "online": true
+}
+```
+
+---
+
+### 6. Get All Online Users
+
+| | |
+|---|---|
+| **URL** | `GET /presence` |
+| **Auth** | Bearer token required |
+
+**Response `200 OK`:**
+
+```json
+{
+  "onlineUsers": ["john", "jane"]
+}
 ```
 
 ---
@@ -181,9 +226,11 @@ The server extracts the username from the JWT and sets it as the STOMP user prin
 
 | Destination | Purpose | Payload |
 |---|---|---|
-| `/user/queue/messages` | Receive private messages (sent to you or by you) | `Message` object |
+| `/user/queue/messages` | Receive private messages (sent to you or by you) | `Message` object (includes `status`, `deliveredAt`, `seenAt`) |
+| `/user/queue/status-updates` | Receive delivery/seen receipts for messages you sent | `{ messageId, status, deliveredAt?, seenAt? }` |
 | `/user/queue/errors` | Receive error notifications | `{ "error": "..." }` |
 | `/topic/status` | Receive join/status broadcasts | `"john joined"` (plain string) |
+| `/topic/presence` | Receive online/offline events for all users | `{ "username": "jane", "online": true }` |
 
 ---
 
@@ -221,6 +268,58 @@ Sent to `/user/queue/errors`:
 }
 ```
 
+#### Mark Message as Delivered
+
+| | |
+|---|---|
+| **Destination** | `/app/chat.delivered` |
+
+**Payload:**
+
+```json
+{
+  "messageId": 123
+}
+```
+
+> Only the **recipient** of the message can mark it delivered. The sender receives a status update on `/user/queue/status-updates`:
+
+```json
+{
+  "messageId": 123,
+  "status": "DELIVERED",
+  "deliveredAt": "2026-03-05T10:00:01.000000Z"
+}
+```
+
+---
+
+#### Mark Message as Seen
+
+| | |
+|---|---|
+| **Destination** | `/app/chat.seen` |
+
+**Payload:**
+
+```json
+{
+  "messageId": 123
+}
+```
+
+> Only the **recipient** of the message can mark it seen. The sender receives a status update on `/user/queue/status-updates`:
+
+```json
+{
+  "messageId": 123,
+  "status": "SEEN",
+  "seenAt": "2026-03-05T10:01:00.000000Z"
+}
+```
+
+---
+
 #### Join / Announce Presence
 
 | | |
@@ -230,6 +329,14 @@ Sent to `/user/queue/errors`:
 **Payload:** none (empty body)
 
 **Effect:** broadcasts `"<username> joined"` to `/topic/status`.
+
+---
+
+### Automatic Behaviors
+
+- **On WebSocket CONNECT:** user is marked **online**, broadcast to `/topic/presence`. All pending `SENT` messages are auto-marked `DELIVERED` and senders are notified via `/user/queue/status-updates`.
+- **On WebSocket DISCONNECT:** user is marked **offline**, broadcast to `/topic/presence`.
+- **On `/app/chat.send`:** if recipient is online, message is auto-marked `DELIVERED` immediately.
 
 ---
 
@@ -243,7 +350,10 @@ interface Message {
   sender: string;
   recipient: string;
   content: string;
-  sentAt: string; // ISO 8601 Instant, e.g. "2026-03-05T10:10:26.166182Z"
+  status: "SENT" | "DELIVERED" | "SEEN";
+  sentAt: string;        // ISO 8601 Instant
+  deliveredAt: string | null;
+  seenAt: string | null;
 }
 ```
 

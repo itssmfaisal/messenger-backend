@@ -1,6 +1,7 @@
 package com.backend.messenger.repository;
 
 import com.backend.messenger.model.Message;
+import com.backend.messenger.model.MessageStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,9 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findBySenderAndRecipientOrRecipientAndSender(String sender1, String recipient1, String sender2, String recipient2);
+
+    /** Find undelivered messages for a user (used to mark delivered on connect). */
+    List<Message> findByRecipientAndStatus(String recipient, MessageStatus status);
 
     /**
      * Returns distinct usernames the given user has exchanged messages with,

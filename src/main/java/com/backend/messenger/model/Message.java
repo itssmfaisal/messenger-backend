@@ -12,7 +12,13 @@ public class Message {
     private String sender;
     private String recipient;
     private String content;
+
+    @Enumerated(EnumType.STRING)
+    private MessageStatus status = MessageStatus.SENT;
+
     private Instant sentAt = Instant.now();
+    private Instant deliveredAt;
+    private Instant seenAt;
 
     public Message() {}
 
@@ -54,11 +60,35 @@ public class Message {
         this.content = content;
     }
 
+    public MessageStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(MessageStatus status) {
+        this.status = status;
+    }
+
     public Instant getSentAt() {
         return sentAt;
     }
 
     public void setSentAt(Instant sentAt) {
         this.sentAt = sentAt;
+    }
+
+    public Instant getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(Instant deliveredAt) {
+        this.deliveredAt = deliveredAt;
+    }
+
+    public Instant getSeenAt() {
+        return seenAt;
+    }
+
+    public void setSeenAt(Instant seenAt) {
+        this.seenAt = seenAt;
     }
 }
