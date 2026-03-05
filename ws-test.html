@@ -24,21 +24,30 @@
     <h2>Messenger WebSocket Test</h2>
 
     <div class="section">
-        <strong>Connection:</strong><br>
+        <strong>1. Login first (get JWT token):</strong><br>
+        <input id="loginUser" placeholder="Username" size="20" value="admin">
+        <input id="loginPass" placeholder="Password" size="20" value="admin" type="password">
+        <button onclick="login()">Login</button>
+        <br><br>
+        <strong>Token:</strong>
+        <input id="token" placeholder="JWT token will appear here" size="70" readonly>
+    </div>
+
+    <div class="section">
+        <strong>2. Connect WebSocket:</strong><br>
         <input id="url" value="http://localhost:8080/ws" size="40">
-        <input id="username" placeholder="Your username (e.g. admin)" size="25">
         <button onclick="connectStomp()">Connect</button>
         <button onclick="disconnectStomp()">Disconnect</button>
         <span id="status" style="margin-left:10px;">Disconnected</span>
     </div>
 
     <div class="section">
-        <strong>Join Chat:</strong><br>
+        <strong>3. Join Chat:</strong><br>
         <button onclick="sendJoin()">Send Join</button>
     </div>
 
     <div class="section">
-        <strong>Send Message:</strong><br>
+        <strong>4. Send Message:</strong><br>
         <input id="recipient" placeholder="Recipient username" size="20">
         <input id="message" placeholder="Message content" size="30">
         <button onclick="sendMessage()">Send</button>
@@ -49,6 +58,7 @@
 
     <script>
         let stompClient = null;
+        let loggedInUser = null;
 
         function log(text, cls) {
             const el = document.getElementById('log');
@@ -58,20 +68,43 @@
             el.prepend(entry);
         }
 
+        function login() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            if (!username || !password) { log('Enter username and password!', 'error'); return; }
+
+            fetch('http://localhost:8080/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, password: password })
+            })
+            .then(function(res) {
+                if (!res.ok) throw new Error('Login failed (HTTP ' + res.status + ')');
+                return res.json();
+            })
+            .then(function(data) {
+                document.getElementById('token').value = data.token;
+                loggedInUser = username;
+                log('Logged in as ' + username + ' — token received', 'system');
+            })
+            .catch(function(err) {
+                log('Login failed: ' + err.message, 'error');
+            });
+        }
+
         function connectStomp() {
             const url = document.getElementById('url').value;
-            const user = document.getElementById('username').value;
-            if (!user) { log('Enter a username before connecting!', 'error'); return; }
+            const token = document.getElementById('token').value;
+            if (!token) { log('Login first to get a token!', 'error'); return; }
 
             const sock = new SockJS(url);
             stompClient = Stomp.over(sock);
 
-            stompClient.connect({ username: user }, function (frame) {
-                document.getElementById('status').textContent = 'Connected as ' + user + ' ✅';
+            stompClient.connect({ Authorization: 'Bearer ' + token }, function (frame) {
+                document.getElementById('status').textContent = 'Connected as ' + loggedInUser + ' ✅';
                 document.getElementById('status').style.color = '#4ec9b0';
                 log('CONNECTED: ' + frame, 'system');
 
-                // Auto-subscribe after connecting
                 stompClient.subscribe('/user/queue/messages', function (msg) {
                     log('📩 Private: ' + msg.body, 'received');
                 });
@@ -89,7 +122,7 @@
             }, function (error) {
                 document.getElementById('status').textContent = 'Disconnected ❌';
                 document.getElementById('status').style.color = '#f44747';
-                log('ERROR: ' + error, 'error');
+                log('CONNECTION ERROR: ' + error, 'error');
             });
         }
 
@@ -104,23 +137,18 @@
         }
 
         function sendJoin() {
-            const user = document.getElementById('username').value;
-            if (!user) { log('Enter a username first!', 'error'); return; }
             if (!stompClient) { log('Connect first!', 'error'); return; }
-
-            const payload = JSON.stringify({ sender: user });
-            stompClient.send('/app/chat.join', {}, payload);
-            log('SENT join: ' + payload, 'sent');
+            stompClient.send('/app/chat.join', {}, '{}');
+            log('SENT join', 'sent');
         }
 
         function sendMessage() {
-            const user = document.getElementById('username').value;
             const recipient = document.getElementById('recipient').value;
             const content = document.getElementById('message').value;
-            if (!user || !recipient || !content) { log('Fill in all fields!', 'error'); return; }
+            if (!recipient || !content) { log('Fill in recipient and message!', 'error'); return; }
             if (!stompClient) { log('Connect first!', 'error'); return; }
 
-            const payload = JSON.stringify({ sender: user, recipient: recipient, content: content });
+            const payload = JSON.stringify({ recipient: recipient, content: content });
             stompClient.send('/app/chat.send', {}, payload);
             log('SENT message: ' + payload, 'sent');
         }
