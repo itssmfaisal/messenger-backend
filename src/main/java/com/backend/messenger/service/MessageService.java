@@ -30,7 +30,7 @@ public class MessageService {
     }
 
     public List<Message> findConversation(String user1, String user2) {
-        return messageRepository.findBySenderAndRecipientOrRecipientAndSender(user1, user2, user1, user2);
+        return messageRepository.findBySenderAndRecipientOrRecipientAndSenderOrderBySentAtAsc(user1, user2, user1, user2);
     }
 
     /**

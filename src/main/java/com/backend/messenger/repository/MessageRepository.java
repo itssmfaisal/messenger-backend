@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
-    List<Message> findBySenderAndRecipientOrRecipientAndSender(String sender1, String recipient1, String sender2, String recipient2);
+    List<Message> findBySenderAndRecipientOrRecipientAndSenderOrderBySentAtAsc(String sender1, String recipient1, String sender2, String recipient2);
 
     /** Find undelivered messages for a user (used to mark delivered on connect). */
     List<Message> findByRecipientAndStatus(String recipient, MessageStatus status);
