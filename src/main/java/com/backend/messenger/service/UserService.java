@@ -60,4 +60,27 @@ public class UserService implements UserDetailsService {
         u.getRoles().add(role);
         return userRepository.save(u);
     }
+
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElse(null);
+    }
+
+    public User updateProfile(String username, String displayName, String bio) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (displayName != null) {
+            user.setDisplayName(displayName);
+        }
+        if (bio != null) {
+            user.setBio(bio);
+        }
+        return userRepository.save(user);
+    }
+
+    public User updateProfilePicture(String username, String profilePictureUrl) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        user.setProfilePictureUrl(profilePictureUrl);
+        return userRepository.save(user);
+    }
 }

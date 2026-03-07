@@ -6,7 +6,7 @@
 
 ## Authentication
 
-All endpoints except `/auth/**` and `/ws/**` require a JWT token in the `Authorization` header:
+All endpoints except `/auth/**`, `/ws/**`, and `/files/**` require a JWT token in the `Authorization` header:
 
 ```
 Authorization: Bearer <token>
@@ -147,17 +147,25 @@ Token expires after **24 hours** (86400000 ms).
     "status": "SEEN",
     "sentAt": "2026-03-05T10:00:00.000000Z",
     "deliveredAt": "2026-03-05T10:00:01.000000Z",
-    "seenAt": "2026-03-05T10:00:03.000000Z"
+    "seenAt": "2026-03-05T10:00:03.000000Z",
+    "attachmentUrl": null,
+    "attachmentName": null,
+    "attachmentType": null,
+    "attachmentSize": null
   },
   {
     "id": 2,
     "sender": "jane",
     "recipient": "john",
-    "content": "Hi there!",
+    "content": "Here's the file",
     "status": "DELIVERED",
     "sentAt": "2026-03-05T10:00:05.000000Z",
     "deliveredAt": "2026-03-05T10:00:06.000000Z",
-    "seenAt": null
+    "seenAt": null,
+    "attachmentUrl": "/files/attachments/uuid456.pdf",
+    "attachmentName": "report.pdf",
+    "attachmentType": "application/pdf",
+    "attachmentSize": 204800
   }
 ]
 ```
@@ -198,6 +206,162 @@ Token expires after **24 hours** (86400000 ms).
 ```json
 {
   "onlineUsers": ["john", "jane"]
+}
+```
+
+---
+
+### 7. Get Own Profile
+
+| | |
+|---|---|
+| **URL** | `GET /profile` |
+| **Auth** | Bearer token required |
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "john",
+  "displayName": "John Doe",
+  "bio": "Hello, I'm John!",
+  "profilePictureUrl": "/files/profile-pictures/john_abc123.jpg"
+}
+```
+
+---
+
+### 8. Get User Profile
+
+| | |
+|---|---|
+| **URL** | `GET /profile/{username}` |
+| **Auth** | Bearer token required |
+
+**Path Params:**
+
+- `username` — the user whose profile to view
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "jane",
+  "displayName": "Jane Smith",
+  "bio": "Hey there!",
+  "profilePictureUrl": "/files/profile-pictures/jane_def456.png"
+}
+```
+
+**Response `404 Not Found`:**
+
+```json
+{
+  "error": "User not found"
+}
+```
+
+---
+
+### 9. Update Profile
+
+| | |
+|---|---|
+| **URL** | `PUT /profile` |
+| **Auth** | Bearer token required |
+| **Content-Type** | `application/json` |
+
+**Request Body:**
+
+```json
+{
+  "displayName": "John Doe",
+  "bio": "Updated bio text"
+}
+```
+
+> Both fields are optional. Only provided fields are updated.
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "john",
+  "displayName": "John Doe",
+  "bio": "Updated bio text",
+  "profilePictureUrl": "/files/profile-pictures/john_abc123.jpg"
+}
+```
+
+---
+
+### 10. Upload / Update Profile Picture
+
+| | |
+|---|---|
+| **URL** | `POST /profile/picture` |
+| **Auth** | Bearer token required |
+| **Content-Type** | `multipart/form-data` |
+
+**Form Params:**
+
+| Param | Type | Description |
+|---|---|---|
+| `file` | file | Image file (JPEG, PNG, GIF, WebP). Max 5 MB. |
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "john",
+  "displayName": "John Doe",
+  "bio": "Hello, I'm John!",
+  "profilePictureUrl": "/files/profile-pictures/john_newuuid.jpg"
+}
+```
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "File type not allowed: application/pdf"
+}
+```
+
+---
+
+### 11. Upload Chat Attachment
+
+| | |
+|---|---|
+| **URL** | `POST /messages/attachment` |
+| **Auth** | Bearer token required |
+| **Content-Type** | `multipart/form-data` |
+
+**Form Params:**
+
+| Param | Type | Description |
+|---|---|---|
+| `file` | file | Attachment file. Max 25 MB. Allowed types: images, PDF, Word, Excel, text, ZIP, audio (MP3, WAV), video (MP4, WebM). |
+
+**Response `200 OK`:**
+
+```json
+{
+  "attachmentUrl": "/files/attachments/uuid123.pdf",
+  "attachmentName": "document.pdf",
+  "attachmentType": "application/pdf",
+  "attachmentSize": 102400
+}
+```
+
+> Use the returned values when sending a message with an attachment via WebSocket.
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "File size exceeds maximum allowed size"
 }
 ```
 
@@ -251,7 +415,21 @@ The server extracts the username from the JWT and sets it as the STOMP user prin
 }
 ```
 
+**Payload with attachment** (after uploading via `POST /messages/attachment`):
+
+```json
+{
+  "recipient": "jane",
+  "content": "Check out this file!",
+  "attachmentUrl": "/files/attachments/uuid123.pdf",
+  "attachmentName": "document.pdf",
+  "attachmentType": "application/pdf",
+  "attachmentSize": 102400
+}
+```
+
 > `sender` is **ignored** — the server overwrites it with the authenticated user's username.
+> `content` can be empty when sending attachment-only messages.
 
 **On success:** the message (with `id`, `sender`, `sentAt`) is delivered to:
 
@@ -351,9 +529,13 @@ interface Message {
   recipient: string;
   content: string;
   status: "SENT" | "DELIVERED" | "SEEN";
-  sentAt: string;        // ISO 8601 Instant
+  sentAt: string;              // ISO 8601 Instant
   deliveredAt: string | null;
   seenAt: string | null;
+  attachmentUrl: string | null;
+  attachmentName: string | null;
+  attachmentType: string | null;
+  attachmentSize: number | null;
 }
 ```
 
@@ -363,6 +545,37 @@ interface Message {
 interface ConversationDTO {
   partner: string;       // username of the other participant
   lastMessageAt: string; // ISO 8601 Instant of the latest message in the conversation
+}
+```
+
+### ProfileDTO
+
+```typescript
+interface ProfileDTO {
+  username: string;
+  displayName: string | null;
+  bio: string | null;
+  profilePictureUrl: string | null;
+}
+```
+
+### ProfileUpdateRequest
+
+```typescript
+interface ProfileUpdateRequest {
+  displayName?: string;
+  bio?: string;
+}
+```
+
+### AttachmentUploadResponse
+
+```typescript
+interface AttachmentUploadResponse {
+  attachmentUrl: string;
+  attachmentName: string;
+  attachmentType: string;
+  attachmentSize: number;
 }
 ```
 
@@ -435,5 +648,51 @@ client.activate();
 client.publish({
   destination: "/app/chat.send",
   body: JSON.stringify({ recipient: "jane", content: "Hello!" }),
+});
+
+// Send a message with attachment (after uploading via REST)
+const uploadRes = await fetch("http://localhost:8080/messages/attachment", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: formData, // FormData with 'file' field
+});
+const attachment = await uploadRes.json();
+
+client.publish({
+  destination: "/app/chat.send",
+  body: JSON.stringify({
+    recipient: "jane",
+    content: "Check this out!",
+    ...attachment,
+  }),
+});
+```
+
+### Profile API
+
+```typescript
+// Get own profile
+const profileRes = await fetch("http://localhost:8080/profile", {
+  headers: { Authorization: `Bearer ${token}` },
+});
+const profile = await profileRes.json();
+
+// Update profile
+await fetch("http://localhost:8080/profile", {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({ displayName: "John Doe", bio: "Hey!" }),
+});
+
+// Upload profile picture
+const formData = new FormData();
+formData.append("file", fileInput.files[0]);
+await fetch("http://localhost:8080/profile/picture", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: formData,
 });
 ```
