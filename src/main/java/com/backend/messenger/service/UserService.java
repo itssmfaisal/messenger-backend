@@ -54,14 +54,14 @@ public class UserService implements UserDetailsService {
         return roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());
     }
 
-    public User register(String username, String password) {
+    public User register(String username, String email, String password) {
         if (username == null || !username.matches("[a-z0-9_]+")) {
             throw new IllegalArgumentException("Username may only contain lowercase letters, digits, and underscores");
         }
         if (userRepository.findByUsername(username).isPresent()) {
             throw new IllegalArgumentException("Username is already taken");
         }
-        User u = new User(username, passwordEncoder.encode(password));
+        User u = new User(username, email, passwordEncoder.encode(password));
         Role role = roleRepository.findByName("ROLE_USER").orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
         u.getRoles().add(role);
         return userRepository.save(u);

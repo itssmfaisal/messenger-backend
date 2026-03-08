@@ -31,6 +31,7 @@ Token expires after **24 hours** (86400000 ms).
 ```json
 {
   "username": "john",
+  "email": "john@example.com",
   "password": "secret123"
 }
 ```
@@ -75,6 +76,111 @@ Token expires after **24 hours** (86400000 ms).
 ```json
 {
   "error": "Invalid credentials"
+}
+```
+
+---
+
+### 2a. Forgot Password (Send OTP)
+
+| | |
+|---|---|
+| **URL** | `POST /auth/forgot-password` |
+| **Auth** | None |
+| **Content-Type** | `application/json` |
+
+**Request Body:**
+
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+**Response `200 OK`:**
+
+```json
+{
+  "message": "OTP sent to your email"
+}
+```
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "No account found with this email"
+}
+```
+
+---
+
+### 2b. Verify OTP
+
+| | |
+|---|---|
+| **URL** | `POST /auth/verify-otp` |
+| **Auth** | None |
+| **Content-Type** | `application/json` |
+
+**Request Body:**
+
+```json
+{
+  "email": "john@example.com",
+  "otp": "123456"
+}
+```
+
+**Response `200 OK`:**
+
+```json
+{
+  "message": "OTP verified successfully"
+}
+```
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "Invalid or expired OTP"
+}
+```
+
+---
+
+### 2c. Reset Password
+
+| | |
+|---|---|
+| **URL** | `POST /auth/reset-password` |
+| **Auth** | None |
+| **Content-Type** | `application/json` |
+
+**Request Body:**
+
+```json
+{
+  "email": "john@example.com",
+  "otp": "123456",
+  "newPassword": "newSecret123"
+}
+```
+
+**Response `200 OK`:**
+
+```json
+{
+  "message": "Password reset successfully"
+}
+```
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "Invalid OTP"
 }
 ```
 
