@@ -458,6 +458,78 @@ Token expires after **24 hours** (86400000 ms).
 
 ---
 
+### 10a. Send Email Verification OTP
+
+| | |
+|---|---|
+| **URL** | `POST /profile/email/send-otp` |
+| **Auth** | Bearer token required |
+| **Content-Type** | `application/json` |
+
+**Request Body:**
+
+```json
+{
+  "email": "newemail@example.com"
+}
+```
+
+**Response `200 OK`:**
+
+```json
+{
+  "message": "Verification OTP sent to newemail@example.com"
+}
+```
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "This email is already in use by another account"
+}
+```
+
+---
+
+### 10b. Verify OTP & Update Email
+
+| | |
+|---|---|
+| **URL** | `POST /profile/email/verify` |
+| **Auth** | Bearer token required |
+| **Content-Type** | `application/json` |
+
+**Request Body:**
+
+```json
+{
+  "otp": "123456"
+}
+```
+
+**Response `200 OK`:**
+
+```json
+{
+  "username": "john",
+  "email": "newemail@example.com",
+  "displayName": "John Doe",
+  "bio": "Hello, I'm John!",
+  "profilePictureUrl": "/files/profile-pictures/john.jpg"
+}
+```
+
+**Response `400 Bad Request`:**
+
+```json
+{
+  "error": "Invalid OTP"
+}
+```
+
+---
+
 ### 11. Upload Chat Attachment
 
 | | |

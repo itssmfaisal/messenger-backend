@@ -2,14 +2,16 @@ package com.backend.messenger.model;
 
 public class ProfileDTO {
     private String username;
+    private String email;
     private String displayName;
     private String bio;
     private String profilePictureUrl;
 
     public ProfileDTO() {}
 
-    public ProfileDTO(String username, String displayName, String bio, String profilePictureUrl) {
+    public ProfileDTO(String username, String email, String displayName, String bio, String profilePictureUrl) {
         this.username = username;
+        this.email = email;
         this.displayName = displayName;
         this.bio = bio;
         this.profilePictureUrl = profilePictureUrl;
@@ -21,6 +23,14 @@ public class ProfileDTO {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getDisplayName() {
