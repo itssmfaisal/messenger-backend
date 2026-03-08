@@ -124,71 +124,51 @@ Token expires after **24 hours** (86400000 ms).
 
 ---
 
-### 4. Get Conversation History (Paginated)
+### 4. Get Conversation History
 
 | | |
 |---|---|
-| **URL** | `GET /messages/conversation/{withUser}?page=0&size=50` |
+| **URL** | `GET /messages/conversation/{withUser}` |
 | **Auth** | Bearer token required |
 
 **Path Params:**
 
 - `withUser` — username of the other participant
 
-**Query Params:**
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `page` | int | `0` | Zero-based page index |
-| `size` | int | `50` | Number of messages per page |
-
 **Response `200 OK`:**
 
 ```json
-{
-  "content": [
-    {
-      "id": 1,
-      "sender": "john",
-      "recipient": "jane",
-      "content": "Hey!",
-      "status": "SEEN",
-      "sentAt": "2026-03-05T10:00:00.000000Z",
-      "deliveredAt": "2026-03-05T10:00:01.000000Z",
-      "seenAt": "2026-03-05T10:00:03.000000Z",
-      "attachmentUrl": null,
-      "attachmentName": null,
-      "attachmentType": null,
-      "attachmentSize": null
-    },
-    {
-      "id": 2,
-      "sender": "jane",
-      "recipient": "john",
-      "content": "Here's the file",
-      "status": "DELIVERED",
-      "sentAt": "2026-03-05T10:00:05.000000Z",
-      "deliveredAt": "2026-03-05T10:00:06.000000Z",
-      "seenAt": null,
-      "attachmentUrl": "/files/attachments/uuid456.pdf",
-      "attachmentName": "report.pdf",
-      "attachmentType": "application/pdf",
-      "attachmentSize": 204800
-    }
-  ],
-  "pageable": {
-    "pageNumber": 0,
-    "pageSize": 50
+[
+  {
+    "id": 1,
+    "sender": "john",
+    "recipient": "jane",
+    "content": "Hey!",
+    "status": "SEEN",
+    "sentAt": "2026-03-05T10:00:00.000000Z",
+    "deliveredAt": "2026-03-05T10:00:01.000000Z",
+    "seenAt": "2026-03-05T10:00:03.000000Z",
+    "attachmentUrl": null,
+    "attachmentName": null,
+    "attachmentType": null,
+    "attachmentSize": null
   },
-  "totalElements": 2,
-  "totalPages": 1,
-  "last": true,
-  "first": true,
-  "numberOfElements": 2
-}
+  {
+    "id": 2,
+    "sender": "jane",
+    "recipient": "john",
+    "content": "Here's the file",
+    "status": "DELIVERED",
+    "sentAt": "2026-03-05T10:00:05.000000Z",
+    "deliveredAt": "2026-03-05T10:00:06.000000Z",
+    "seenAt": null,
+    "attachmentUrl": "/files/attachments/uuid456.pdf",
+    "attachmentName": "report.pdf",
+    "attachmentType": "application/pdf",
+    "attachmentSize": 204800
+  }
+]
 ```
-
-> Messages are returned in ascending order by `sentAt` (oldest first). Fetch higher page numbers to load older messages.
 
 ---
 
@@ -450,26 +430,19 @@ The server extracts the username from the JWT and sets it as the STOMP user prin
 
 > `sender` is **ignored** — the server overwrites it with the authenticated user's username.
 > `content` can be empty when sending attachment-only messages.
-> `content` is limited to **2000 characters**. Exceeding this limit sends an error to `/user/queue/errors`.
 
 **On success:** the message (with `id`, `sender`, `sentAt`) is delivered to:
 
 - `/user/queue/messages` of the **recipient**
 - `/user/queue/messages` of the **sender** (echo back)
 
-**On error** (recipient doesn't exist, or message too long):
+**On error** (recipient doesn't exist):
 
 Sent to `/user/queue/errors`:
 
 ```json
 {
   "error": "User 'nonexistent' does not exist"
-}
-```
-
-```json
-{
-  "error": "Message content exceeds the maximum allowed length of 2000 characters"
 }
 ```
 

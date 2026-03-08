@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -39,12 +40,8 @@ public class MessageRestController {
     }
 
     @GetMapping("/conversation/{withUser}")
-    public ResponseEntity<?> conversation(
-            @AuthenticationPrincipal UserDetails user,
-            @PathVariable String withUser,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
-        Page<Message> msgs = messageService.findConversationPaged(user.getUsername(), withUser, page, size);
+    public ResponseEntity<?> conversation(@AuthenticationPrincipal UserDetails user, @PathVariable String withUser) {
+        List<Message> msgs = messageService.findConversation(user.getUsername(), withUser);
         return ResponseEntity.ok(msgs);
     }
 
