@@ -34,6 +34,12 @@ public class ChatController {
         // Use authenticated user as sender — ignore what client sends
         message.setSender(principal.getName());
 
+        if (message.getContent() != null && message.getContent().length() > 2000) {
+            template.convertAndSendToUser(principal.getName(), "/queue/errors",
+                    Map.of("error", "Message content exceeds the maximum allowed length of 2000 characters"));
+            return;
+        }
+
         if (userRepository.findByUsername(message.getRecipient()).isEmpty()) {
             template.convertAndSendToUser(principal.getName(), "/queue/errors",
                     Map.of("error", "User '" + message.getRecipient() + "' does not exist"));

@@ -13,6 +13,8 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findBySenderAndRecipientOrRecipientAndSenderOrderBySentAtAsc(String sender1, String recipient1, String sender2, String recipient2);
 
+    Page<Message> findBySenderAndRecipientOrRecipientAndSenderOrderBySentAtAsc(String sender1, String recipient1, String sender2, String recipient2, Pageable pageable);
+
     /** Find undelivered messages for a user (used to mark delivered on connect). */
     List<Message> findByRecipientAndStatus(String recipient, MessageStatus status);
 

@@ -11,6 +11,8 @@ public class Message {
 
     private String sender;
     private String recipient;
+
+    @Column(length = 2000)
     private String content;
 
     @Enumerated(EnumType.STRING)

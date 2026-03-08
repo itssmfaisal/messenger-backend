@@ -33,6 +33,11 @@ public class MessageService {
         return messageRepository.findBySenderAndRecipientOrRecipientAndSenderOrderBySentAtAsc(user1, user2, user1, user2);
     }
 
+    public Page<Message> findConversationPaged(String user1, String user2, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return messageRepository.findBySenderAndRecipientOrRecipientAndSenderOrderBySentAtAsc(user1, user2, user1, user2, pageable);
+    }
+
     /**
      * Returns a paginated list of conversation partners for the given user,
      * ordered by the most recent message timestamp (newest first).
