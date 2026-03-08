@@ -124,51 +124,73 @@ Token expires after **24 hours** (86400000 ms).
 
 ---
 
-### 4. Get Conversation History
+### 4. Get Conversation History (Paginated)
 
 | | |
 |---|---|
-| **URL** | `GET /messages/conversation/{withUser}` |
+| **URL** | `GET /messages/conversation/{withUser}?page=0&size=20` |
 | **Auth** | Bearer token required |
 
 **Path Params:**
 
 - `withUser` — username of the other participant
 
+**Query Params:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `page` | int | `0` | Zero-based page index |
+| `size` | int | `20` | Number of messages per page |
+
+> Page `0` returns the **latest** messages. Increment `page` to load older messages.
+
 **Response `200 OK`:**
 
 ```json
-[
-  {
-    "id": 1,
-    "sender": "john",
-    "recipient": "jane",
-    "content": "Hey!",
-    "status": "SEEN",
-    "sentAt": "2026-03-05T10:00:00.000000Z",
-    "deliveredAt": "2026-03-05T10:00:01.000000Z",
-    "seenAt": "2026-03-05T10:00:03.000000Z",
-    "attachmentUrl": null,
-    "attachmentName": null,
-    "attachmentType": null,
-    "attachmentSize": null
+{
+  "content": [
+    {
+      "id": 2,
+      "sender": "jane",
+      "recipient": "john",
+      "content": "Here's the file",
+      "status": "DELIVERED",
+      "sentAt": "2026-03-05T10:00:05.000000Z",
+      "deliveredAt": "2026-03-05T10:00:06.000000Z",
+      "seenAt": null,
+      "attachmentUrl": "/files/attachments/uuid456.pdf",
+      "attachmentName": "report.pdf",
+      "attachmentType": "application/pdf",
+      "attachmentSize": 204800
+    },
+    {
+      "id": 1,
+      "sender": "john",
+      "recipient": "jane",
+      "content": "Hey!",
+      "status": "SEEN",
+      "sentAt": "2026-03-05T10:00:00.000000Z",
+      "deliveredAt": "2026-03-05T10:00:01.000000Z",
+      "seenAt": "2026-03-05T10:00:03.000000Z",
+      "attachmentUrl": null,
+      "attachmentName": null,
+      "attachmentType": null,
+      "attachmentSize": null
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 20
   },
-  {
-    "id": 2,
-    "sender": "jane",
-    "recipient": "john",
-    "content": "Here's the file",
-    "status": "DELIVERED",
-    "sentAt": "2026-03-05T10:00:05.000000Z",
-    "deliveredAt": "2026-03-05T10:00:06.000000Z",
-    "seenAt": null,
-    "attachmentUrl": "/files/attachments/uuid456.pdf",
-    "attachmentName": "report.pdf",
-    "attachmentType": "application/pdf",
-    "attachmentSize": 204800
-  }
-]
+  "totalElements": 2,
+  "totalPages": 1,
+  "last": true,
+  "first": true,
+  "numberOfElements": 2
+}
 ```
+
+> Results are sorted newest-first (`sentAt DESC`). Reverse the `content` array on the client if you need chronological display order.
 
 ---
 

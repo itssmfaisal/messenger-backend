@@ -16,6 +16,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     /** Find undelivered messages for a user (used to mark delivered on connect). */
     List<Message> findByRecipientAndStatus(String recipient, MessageStatus status);
 
+    /** Paginated conversation between two users, newest messages first. */
+    @Query("SELECT m FROM Message m WHERE (m.sender = :user1 AND m.recipient = :user2) OR (m.sender = :user2 AND m.recipient = :user1) ORDER BY m.sentAt DESC")
+    Page<Message> findConversationPaginated(@Param("user1") String user1, @Param("user2") String user2, Pageable pageable);
+
     /**
      * Returns distinct usernames the given user has exchanged messages with,
      * along with the latest message timestamp, ordered newest-first.
