@@ -55,6 +55,12 @@ public class UserService implements UserDetailsService {
     }
 
     public User register(String username, String password) {
+        if (username == null || !username.matches("[a-z0-9_]+")) {
+            throw new IllegalArgumentException("Username may only contain lowercase letters, digits, and underscores");
+        }
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new IllegalArgumentException("Username is already taken");
+        }
         User u = new User(username, passwordEncoder.encode(password));
         Role role = roleRepository.findByName("ROLE_USER").orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
         u.getRoles().add(role);

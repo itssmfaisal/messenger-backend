@@ -29,8 +29,12 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
-        User u = userService.register(username, password);
-        return ResponseEntity.ok(Map.of("username", u.getUsername()));
+        try {
+            User u = userService.register(username, password);
+            return ResponseEntity.ok(Map.of("username", u.getUsername()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
