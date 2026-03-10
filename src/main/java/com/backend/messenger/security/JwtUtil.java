@@ -18,7 +18,8 @@ public class JwtUtil {
     @Value("${jwt.secret:secret-key}")
     private String secret;
 
-    @Value("${jwt.expiration-ms:86400000}")
+    // 6 months in milliseconds: 6 * 30 * 24 * 60 * 60 * 1000 = 15,552,000,000
+    @Value("${jwt.expiration-ms:15552000000}")
     private long expirationMs;
 
     private SecretKey getSigningKey() {
