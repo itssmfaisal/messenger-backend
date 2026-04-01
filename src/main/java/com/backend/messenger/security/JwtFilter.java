@@ -1,6 +1,8 @@
 package com.backend.messenger.security;
 
 import com.backend.messenger.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +21,8 @@ import java.io.IOException;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
+
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -31,13 +35,19 @@ public class JwtFilter extends OncePerRequestFilter {
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         String token = null;
         String username = null;
+        String path = request.getRequestURI();
 
         if (header != null && header.startsWith("Bearer ")) {
             token = header.substring(7);
             try {
                 username = jwtUtil.extractUsername(token);
-            } catch (Exception ignored) {
+            } catch (Exception ex) {
+                if (path.startsWith("/messages")) {
+                    log.warn("JWT parse failed for {} {}: {}", request.getMethod(), path, ex.getMessage());
+                }
             }
+        } else if (path.startsWith("/messages")) {
+            log.warn("Missing/invalid Authorization header for {} {}", request.getMethod(), path);
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -46,6 +56,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
+            } else if (path.startsWith("/messages")) {
+                log.warn("JWT validation failed for user {} on {} {}", username, request.getMethod(), path);
             }
         }
 
