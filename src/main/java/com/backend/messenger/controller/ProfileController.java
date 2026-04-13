@@ -1,7 +1,12 @@
 package com.backend.messenger.controller;
 
-import com.backend.messenger.model.ProfileDTO;
-import com.backend.messenger.model.ProfileUpdateRequest;
+import com.backend.messenger.dto.requestDTO.ProfileUpdateRequest;
+import com.backend.messenger.dto.requestDTO.SendEmailVerificationOtpRequestDTO;
+import com.backend.messenger.dto.requestDTO.UploadProfilePictureRequestDTO;
+import com.backend.messenger.dto.requestDTO.VerifyEmailOtpRequestDTO;
+import com.backend.messenger.dto.responseDTO.ErrorResponseDTO;
+import com.backend.messenger.dto.responseDTO.MessageResponseDTO;
+import com.backend.messenger.dto.responseDTO.ProfileDTO;
 import com.backend.messenger.model.User;
 import com.backend.messenger.service.EmailVerificationService;
 import com.backend.messenger.service.FileStorageService;
@@ -11,10 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/profile")
@@ -25,22 +28,22 @@ public class ProfileController {
     @Autowired private EmailVerificationService emailVerificationService;
 
     @GetMapping
-    public ResponseEntity<?> getOwnProfile(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<ProfileDTO> getOwnProfile(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.findByUsername(userDetails.getUsername());
         return ResponseEntity.ok(toDTO(user));
     }
 
     @GetMapping("/{username}")
-    public ResponseEntity<?> getProfile(@PathVariable String username) {
+    public ResponseEntity<Object> getProfile(@PathVariable String username) {
         User user = userService.findByUsername(username);
         if (user == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            return ResponseEntity.status(404).body(new ErrorResponseDTO("User not found"));
         }
         return ResponseEntity.ok(toDTO(user));
     }
 
     @PutMapping
-    public ResponseEntity<?> updateProfile(
+    public ResponseEntity<ProfileDTO> updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody ProfileUpdateRequest request) {
         User user = userService.updateProfile(
@@ -49,17 +52,20 @@ public class ProfileController {
     }
 
     @PostMapping("/picture")
-    public ResponseEntity<?> uploadProfilePicture(
+    public ResponseEntity<Object> uploadProfilePicture(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("file") MultipartFile file) {
+            @ModelAttribute UploadProfilePictureRequestDTO request) {
         try {
-            String url = fileStorageService.storeProfilePicture(userDetails.getUsername(), file);
+            if (request.getFile() == null || request.getFile().isEmpty()) {
+                return ResponseEntity.badRequest().body(new ErrorResponseDTO("File is required"));
+            }
+            String url = fileStorageService.storeProfilePicture(userDetails.getUsername(), request.getFile());
             User user = userService.updateProfilePicture(userDetails.getUsername(), url);
             return ResponseEntity.ok(toDTO(user));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponseDTO(e.getMessage()));
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to upload file"));
+            return ResponseEntity.internalServerError().body(new ErrorResponseDTO("Failed to upload file"));
         }
     }
 
@@ -73,34 +79,34 @@ public class ProfileController {
     }
 
     @PostMapping("/email/send-otp")
-    public ResponseEntity<?> sendEmailVerificationOtp(
+    public ResponseEntity<Object> sendEmailVerificationOtp(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @RequestBody SendEmailVerificationOtpRequestDTO request) {
         try {
-            String newEmail = body.get("email");
+            String newEmail = request.getEmail();
             if (newEmail == null || newEmail.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+                return ResponseEntity.badRequest().body(new ErrorResponseDTO("Email is required"));
             }
             emailVerificationService.sendVerificationOtp(userDetails.getUsername(), newEmail);
-            return ResponseEntity.ok(Map.of("message", "Verification OTP sent to " + newEmail));
+            return ResponseEntity.ok(new MessageResponseDTO("Verification OTP sent to " + newEmail));
         } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponseDTO(ex.getMessage()));
         }
     }
 
     @PostMapping("/email/verify")
-    public ResponseEntity<?> verifyAndUpdateEmail(
+    public ResponseEntity<Object> verifyAndUpdateEmail(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @RequestBody VerifyEmailOtpRequestDTO request) {
         try {
-            String otp = body.get("otp");
+            String otp = request.getOtp();
             if (otp == null || otp.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "OTP is required"));
+                return ResponseEntity.badRequest().body(new ErrorResponseDTO("OTP is required"));
             }
             User user = emailVerificationService.verifyAndUpdateEmail(userDetails.getUsername(), otp);
             return ResponseEntity.ok(toDTO(user));
         } catch (RuntimeException ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+            return ResponseEntity.badRequest().body(new ErrorResponseDTO(ex.getMessage()));
         }
     }
 }

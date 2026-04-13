@@ -1,6 +1,6 @@
 package com.backend.messenger.service;
 
-import com.backend.messenger.model.ConversationDTO;
+import com.backend.messenger.dto.responseDTO.ConversationDTO;
 import com.backend.messenger.model.Message;
 import com.backend.messenger.model.MessageStatus;
 import com.backend.messenger.repository.MessageRepository;

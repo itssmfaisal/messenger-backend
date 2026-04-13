@@ -1,4 +1,4 @@
-package com.backend.messenger.model;
+package com.backend.messenger.dto.requestDTO;
 
 public class ProfileUpdateRequest {
     private String displayName;

@@ -1,4 +1,4 @@
-package com.backend.messenger.model;
+package com.backend.messenger.dto.responseDTO;
 
 public class ProfileDTO {
     private String username;
